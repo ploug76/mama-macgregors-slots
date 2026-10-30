@@ -542,7 +542,7 @@ function showStats(){const wasP=paused;if(!paused&&state=='play')togglePause();c
  ${MACH.map(m=>`<tr><td>Best on ${m.n}</td><td>🪙 ${fmt(b.perM[m.id]||0)}</td></tr>`).join('')}<tr><td>Spins</td><td>${fmt(s.spins)}</td></tr><tr><td>Free spin rounds</td><td>${s.fs}</td></tr><tr><td>Pick bonuses</td><td>${s.bonus}</td></tr><tr><td>Big wins (10×+)</td><td>${s.big}</td></tr><tr><td>Your return so far</td><td>${s.bet?(100*s.won/s.bet).toFixed(1)+'%':'—'}</td></tr><tr><td>Free refills</td><td>${save.refills}</td></tr></table>
  <p style="font-size:16px;color:#555">Pretend coins only — this is a just-for-fun game with no real money.</p>`,()=>{if(!wasP&&paused)togglePause()})}
 // ---------- input
-c.addEventListener('pointerdown',e=>{A();if(panelOpen)return;const[x,y]=toL(e.clientX,e.clientY);if(paused){togglePause();return}
+c.addEventListener('pointerdown',e=>{A();if(panelOpen)return;const[x,y]=toL(e.clientX,e.clientY);if(paused&&!window.EZ_ON){togglePause();return}
  for(const b of activeBtns().slice().reverse())if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){sfx.click();b.fn();return}
  if(state=='play'&&spinning&&inR(x,y,FRAMER))slamStop()});
 addEventListener('keydown',e=>{if(e.code=='KeyP')togglePause();if(e.code=='KeyM'){A();setMute(!muted)}if(e.code=='Space'&&state=='play'&&!paused){e.preventDefault();if(modal&&modal.t>.5&&modal.k!='big'){}if(spinning)slamStop();else startSpin()}});
@@ -565,6 +565,121 @@ window.__T={layout,get:()=>({state,coins:save.coins,lvl:save.lvl,xp:save.xp,spin
  force:(stops)=>{// rig the next spin's stops (tests only)
   const real=SC9.randStops;SC9.randStops=()=>{SC9.randStops=real;return stops}},findStops:(fn)=>{for(let i=0;i<200000;i++){const s=SC9.randStops(M,R),e=SC9.evaluate(M,SC9.gridFrom(M,s));if(fn(e))return s}return null},
  save:()=>save,setSave:o=>{Object.assign(save,o);dispCoins=save.coins},M:()=>M,setTurbo:v=>turbo=v,say,state:s=>{state=s}};
+// ================= EASY MODE (Oct 30 2026) for Mama's ~80-year-old players =================
+// One huge PLAY, one LEVEL SELECT, a tiny gear for sound. Big print (24px+), big buttons (64px+), no pop-ups.
+// Logical screen: portrait 400 wide, landscape 400 tall, other side fills the phone (≈ 1 logical px = 1 CSS px on a 412x915 phone).
+window.EZ_ON=true;const EZ={min:99,minT:'',msg:'',msgT:0};
+function ezResize(){VW=CW/DPR;VH=CH/DPR;const aw=VW-SAFE.l-SAFE.r,ah=VH-SAFE.t-SAFE.b;const land=aw>ah*1.15;
+ if(land){LH=400;LW=Math.round(CL(400*aw/ah,760,900))}else{LW=400;LH=Math.round(CL(400*ah/aw,700,900))}EZ.land=land;
+ SC=Math.min(aw/LW,ah/LH);OXs=SAFE.l+(aw-LW*SC)/2;OYs=SAFE.t+(ah-LH*SC)/2}
+function ezFont(sz){return 'bold '+sz+'px "Trebuchet MS","Segoe UI",sans-serif'}
+// text: never below 24 (squeezes to fit only as a last resort, and that is tracked for QA)
+function ezT(s,x,y,sz,col='#fff',al='center',maxw,stroke){s=String(s);sz=Math.max(24,sz);g.font=ezFont(sz);let e=sz;if(maxw){const m=g.measureText(s).width;if(m>maxw){e=sz*maxw/m;g.font=ezFont(e)}}
+ if(e<EZ.min){EZ.min=e;EZ.minT=s.slice(0,24)}g.textAlign=al;g.textBaseline='middle';if(stroke){g.lineJoin='round';g.lineWidth=Math.max(3,e*.16);g.strokeStyle=stroke;g.strokeText(s,x,y)}g.fillStyle=col;g.fillText(s,x,y);g.textBaseline='alphabetic'}
+function ezLines(s,w,sz){g.font=ezFont(sz);const out=[];let line='';for(const wd of String(s).split(' ')){const t=line?line+' '+wd:wd;if(g.measureText(t).width>w&&line){out.push(line);line=wd}else line=t}if(line)out.push(line);return out}
+function ezWrap(s,cx,cy,w,h,sz,col){let f=sz;let L=ezLines(s,w,f);while(f>24&&(L.length*f*1.2>h||L.some(l=>{g.font=ezFont(f);return g.measureText(l).width>w}))){f-=1;L=ezLines(s,w,f)}
+ const lh=f*1.2;L.forEach((l,i)=>ezT(l,cx,cy-(L.length-1)*lh/2+i*lh,f,col,'center',w))}
+function ezBtn(r,label,fn,o={}){const [x,y,w,h]=r;menuBtns.push({x,y,w,h,fn,label,primary:!!o.primary});const col=o.col||'#2b8a3e',rad=Math.min(18,h/2);
+ g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=8;g.shadowOffsetY=3;g.fillStyle=col;rrect(g,x,y,w,h,rad);g.fill();g.restore();
+ if(o.glow){g.save();g.shadowColor='#ffd43b';g.shadowBlur=24+10*Math.sin(GT*8);g.strokeStyle='#ffd43b';g.lineWidth=5;rrect(g,x,y,w,h,rad);g.stroke();g.restore()}
+ g.fillStyle='rgba(255,255,255,.16)';rrect(g,x+4,y+3,w-8,h*.42,rad*.7);g.fill();g.strokeStyle=o.edge||'rgba(255,255,255,.9)';g.lineWidth=3;rrect(g,x,y,w,h,rad);g.stroke();
+ ezT(label,x+w/2,y+h/2+1,o.fs||Math.min(h*.42,34),o.tc||'#fff','center',w-20,'rgba(0,0,0,.55)')}
+function ezRound(x,y,s,label,fn,col){menuBtns.push({x,y,w:s,h:s,fn,label});g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=6;g.fillStyle=col;g.beginPath();g.arc(x+s/2,y+s/2,s/2,0,TAU);g.fill();g.restore();g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.arc(x+s/2,y+s/2,s/2-1.5,0,TAU);g.stroke();
+ g.font='bold '+Math.round(s*.46)+'px "Segoe UI Emoji","Noto Color Emoji",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillStyle='#fff';g.fillText(label,x+s/2,y+s/2+2);g.textBaseline='alphabetic'}
+const EZLOGO=new Image();EZLOGO.src='studio-logo.webp';
+// tiny studio logo, only where it touches nothing
+function ezLogo(avoid,h=40){if(!EZLOGO.complete||!EZLOGO.naturalWidth)return null;const w=h*EZLOGO.naturalWidth/EZLOGO.naturalHeight,m=8;
+ for(const [x,y] of [[m,m],[m,LH-h-m],[LW-w-m,LH-h-m],[LW-w-m,m]]){const r=[x,y,w,h];if(avoid.some(a=>r[0]<a[0]+a[2]&&a[0]<r[0]+r[2]&&r[1]<a[1]+a[3]&&a[1]<r[1]+r[3]))continue;
+  g.save();g.globalAlpha=.94;g.fillStyle='rgba(0,0,0,.5)';rrect(g,x-2,y-2,w+4,h+4,6);g.fill();g.drawImage(EZLOGO,x,y,w,h);g.restore();EZ.logo=r;return r}EZ.logo=null;return null}
+function ezPauseOverlay(home){g.fillStyle='rgba(0,0,0,.72)';g.fillRect(0,0,LW,LH);const bw=Math.min(LW-60,380),bh=96,gap=20,x=(LW-bw)/2;let y=Math.max(90,(LH-(2*bh+gap))/2+30);
+ ezT('Paused',LW/2,y-44,48,'#fff');ezBtn([x,y,bw,bh],'▶ Keep playing',()=>{paused=false;try{speechSynthesis.resume()}catch(e){}},{col:'#2b8a3e',fs:36,primary:true});y+=bh+gap;
+ ezBtn([x,y,bw,bh],'🏠 Home',()=>{paused=false;try{speechSynthesis.cancel()}catch(e){}home()},{col:'#1864ab',fs:36})}
+function ezSettingsScreen(bg,back){bg();const bw=Math.min(LW-40,400),bh=108,gap=24,x=(LW-bw)/2;let y=Math.max(80,(LH-(bh*2+gap))/2+16);
+ ezT('Sound',LW/2,y-36,40,'#fff','center',0,'rgba(0,0,0,.6)');ezBtn([x,y,bw,bh],muted?'🔇 Sound is OFF':'🔊 Sound is ON',()=>{A();setMute(!muted)},{col:muted?'#495057':'#2b8a3e',fs:36,primary:true});y+=bh+gap;
+ ezBtn([x,y,bw,Math.min(bh,LH-y-10)],'⬅ Back',back,{col:'#1864ab',fs:34})}
+// keep the rest of the arcade chrome off these screens: no DOM pause/sound/help/install bits, no share dock, no leaderboard pop-ups
+(function(){const st=document.createElement('style');st.textContent='#pause,#mute,#help,#inst,#ios,#dock,#dockHint,#shareToast,#lbBtn,#studioLogo{display:none!important}';document.head.appendChild(st)})();
+// ---------- Slots, easy mode
+const EZ_BET=1;// fixed bet: 2 coins a line
+function ezSetLayout(land){LAND=land;const aw=(VW||400)-SAFE.l-SAFE.r,ah=(VH||720)-SAFE.t-SAFE.b;
+ if(!land){LW=400;LH=Math.round(CL(400*ah/Math.max(1,aw),700,900));EZ.top=[8,8,384,72];EZ.pause=[322,10,68];EZ.coins=[8,8,304,72];MAMAR=[8,88,384,128];FRAMER=[8,226,384,272];
+  const sy=FRAMER[1]+FRAMER[3]+16,sh=Math.min(240,LH-sy-14);EZ.spin=[16,sy+Math.max(0,(LH-14-sy-sh)/2),368,sh];BONR=[10,Math.max(90,(LH-440)/2),380,440]}
+ else{LH=400;LW=Math.round(CL(400*aw/Math.max(1,ah),760,900));FRAMER=[12,64,384,272];const X=412,rw=LW-X-10;EZ.coins=[X,8,rw-80,72];EZ.pause=[LW-78,10,68];MAMAR=[X,88,rw,116];EZ.spin=[X,214,rw,176];BONR=[(LW-556)/2,8,556,384]}
+ MODALR=[0,0,LW,LH];REEL_X=FRAMER[0]+12;REEL_T=FRAMER[1]+12;TITLER=[0,0,0,0];COINR=WINR=LVLR=BUBR=TICKR=BMINUS=BETR=BPLUS=PAYR=AUTOR=MAXR=LOBR=STATR=GIFTR=[-999,-999,1,1];SPINC=[-999,-999,1]}
+setLayout=ezSetLayout;
+onResize=function(){VW=CW/DPR;VH=CH/DPR;const aw=VW-SAFE.l-SAFE.r,ah=VH-SAFE.t-SAFE.b;setLayout(aw>ah*1.15);bulbCache={};SC=Math.min(aw/LW,ah/LH);OXs=SAFE.l+(aw-LW*SC)/2;OYs=SAFE.t+(ah-LH*SC)/2;for(const k in SYMC)delete SYMC[k]};
+// symbols without the tiny WILD/BONUS tags
+drawSym=function(id,cx,cy,sz,alpha=1,blur=0){const s=SYM[id];const px=Math.round(sz*Math.min(3,DPR*SC));const bgc=s.wild?'#f6d873':s.scat?'#24305a':s.bonus?'#d8eac8':null;
+ const im=symImg(s.k=='barn'?M.bonusIc:s.k,px,bgc);g.globalAlpha=alpha;if(blur>0){g.globalAlpha=alpha*.35;for(let k=-2;k<=2;k++)g.drawImage(im,cx-sz/2,cy-sz/2+k*blur,sz,sz)}else g.drawImage(im,cx-sz/2,cy-sz/2,sz,sz);g.globalAlpha=1};
+function ezSay(s){EZ.msg=s}
+function ezFixCoins(){const bet=M.lines*CPL[save.cpl];if(save.coins<bet){save.coins+=1000;dispCoins=save.coins;sv()}}
+const _ezStartSpin=startSpin;startSpin=function(){if(!fs)ezFixCoins();save.cpl=EZ_BET;EZ.big=null;turbo=false;auto=0;const was=spinning;_ezStartSpin();if(spinning&&!was)ezSay(fs?'Free spin! Good luck!':'Good luck!')};
+const _ezDone=spinDone;spinDone=function(){_ezDone();ezSay(lastWin>0?'You won '+fmt(lastWin)+' coins!':'No win. Spin again!')};
+const _ezSB=startBonus;startBonus=function(){_ezSB();EZ.bonusIdle=0;ezSay('Tap a barn!')};
+function ezPlayNow(m){A();M=m||MACH.find(q=>q.id==save.mach)||MACH[0];save.mach=M.id;save.cpl=EZ_BET;sv();state='play';chrome(false);reels.forEach(rl=>{rl.p=Math.floor(R()*M.strips[0].length);rl.res=rl.p});grid=null;wins=null;fs=null;bonus=null;modal=null;modalQ.length=0;EZ.big=null;paused=false;ezSay('Tap SPIN, dearie!');playSong(SONG)}
+function ezDrain(){if(modal){modalQ.unshift(modal);modal=null}if(state=='play'&&!spinning){while(modalQ.length){const m=modalQ.shift();
+   if(m.k=='big'){EZ.big={win:m.win,t:0};sfx.big()}else if(m.k=='fsIntro'){startFS(m.n);ezSay(m.n+' FREE SPINS!');sfx.bell()}else if(m.k=='fsEnd'){endFS();ezSay('Free spins won '+fmt(m.won)+' coins!')}
+   else if(m.k=='bonus'){startBonus()}else if(m.k=='refill'){ezFixCoins()}}}}
+const _ezUpd=update;update=function(dt){
+ ezDrain();_ezUpd(dt);ezDrain();msgQ.length=0;msg=null;
+ if(EZ.big){EZ.big.t+=dt;if(EZ.big.t<3&&R()<.5)coinsFx.push({x:R()*LW,y:-12,vx:(R()-.5)*60,vy:30+R()*120,t:0,s:1.3});if(EZ.big.t>3.2)EZ.big=null}
+ if(fs&&EZ.big)fs.wait=0;
+ if(bonus){if(!bonus.done){EZ.bonusIdle=(EZ.bonusIdle||0)+dt;if(EZ.bonusIdle>(bonus.open.length?2:4)){EZ.bonusIdle=0;const left=[...Array(12).keys()].filter(i=>!bonus.open.includes(i));if(left.length)pickTile(PICK(left))}}
+  else if(bonus.t>3.5){const s=bonus.sum;bonus=null;ezSay('Barn Bonus won '+fmt(s)+' coins!')}}};
+const _ezPick=pickTile;pickTile=function(i){EZ.bonusIdle=0;_ezPick(i)};
+function ezCoins(){const [x,y,w,h]=EZ.coins;hudBox([x,y,w,h],.9);ezT('🪙 '+fmt(dispCoins),x+w/2,y+h/2+1,36,'#ffe58a','center',w-16)}
+function ezMama(){const [x,y,w,h]=MAMAR;hudBox(MAMAR,.85);const s=Math.min(1.35,h/80);mamaDraw(x+40*s+4,y+h*.5,s,GT,spinning?1:talkT,EZ.big?1:0);
+ const bx=x+84*s+10,bw=x+w-bx-8;g.fillStyle=PAL.cream;rrect(g,bx,y+8,bw,h-16,14);g.fill();g.strokeStyle='#e8c050';g.lineWidth=2.5;g.stroke();
+ const m=fs&&!spinning&&!EZ.big&&fs.left>0?'Free spins! '+fs.left+' left':EZ.msg||'Tap SPIN, dearie!';ezWrap(m,bx+bw/2,y+h/2,bw-16,h-24,36,PAL.ink)}
+function ezSpin(){const r=EZ.spin,ok=canSpin()&&!EZ.big&&!fs;const lab=fs?'FREE SPIN':'SPIN';
+ menuBtns.unshift({x:r[0],y:r[1],w:r[2],h:r[3],fn:()=>{if(EZ.big){EZ.big=null;return}if(canSpin()&&!fs)startSpin()},label:'SPIN',primary:true});
+ g.save();g.globalAlpha=ok||!spinning?1:.6;g.fillStyle=goldGrad(r[1],r[3]);rrect(g,r[0]-6,r[1]-6,r[2]+12,r[3]+12,26);g.fill();
+ const rg=g.createLinearGradient(0,r[1],0,r[1]+r[3]);rg.addColorStop(0,fs?'#5a8aff':'#ff5a5a');rg.addColorStop(1,fs?'#14206a':'#8a0818');g.fillStyle=rg;rrect(g,r[0],r[1],r[2],r[3],22);g.fill();
+ g.fillStyle='rgba(255,255,255,.18)';rrect(g,r[0]+8,r[1]+6,r[2]-16,r[3]*.4,18);g.fill();
+ if(ok){g.strokeStyle='rgba(255,240,150,'+(.5+.5*Math.sin(GT*5))+')';g.lineWidth=5;rrect(g,r[0]-3,r[1]-3,r[2]+6,r[3]+6,24);g.stroke()}
+ ezT(lab,r[0]+r[2]/2,r[1]+r[3]/2+2,Math.min(72,r[3]*.5),'#fff','center',r[2]-30,'rgba(0,0,0,.6)');g.restore()}
+function ezBig(){if(!EZ.big)return;const t=EZ.big.t;g.fillStyle='rgba(0,0,0,'+Math.min(.6,t*2)+')';g.fillRect(0,0,LW,LH);rays(LW/2,LH*.45,t);drawFx();
+ const s=Math.min(1,.5+t*3);g.save();g.translate(LW/2,LH*.42);g.scale(s,s);ezT('BIG WIN!',0,0,80,'#ffe066','center',LW-30,'#8a1020');g.restore();
+ ezT('You won '+fmt(EZ.big.win)+' coins!',LW/2,LH*.42+80,40,'#fff','center',LW-30,'rgba(0,0,0,.7)');menuBtns.length=0;menuBtns.push({x:0,y:0,w:LW,h:LH,fn:()=>{EZ.big=null},label:'big'})}
+function ezBonus(){g.fillStyle='rgba(10,6,24,.92)';g.fillRect(0,0,LW,LH);stars(30);const [bx,by,bw,bh]=BONR,cx=bx+bw/2;g.fillStyle=goldGrad(by,bh);rrect(g,bx,by,bw,bh,18);g.fill();g.fillStyle='rgba(251,243,223,.97)';rrect(g,bx+8,by+8,bw-16,bh-16,12);g.fill();
+ ezT(bonus.done?'You won '+fmt(bonus.sum)+'!':'Barn Bonus!',cx,by+40,34,'#b0222a','center',bw-30);ezT(bonus.done?'Well done, dearie!':'Tap a barn!',cx,by+74,28,KILT.green,'center',bw-30);menuBtns.length=0;
+ for(let i=0;i<12;i++){const [x,y,w,h]=tileRect(i),op=bonus.open.includes(i)||bonus.done;if(!op)menuBtns.push({x,y,w,h,fn:()=>pickTile(i),label:'tile'});
+  if(!op){g.save();g.translate(x+w/2,y+h/2+4);g.scale(.85,.85);ART[M.bonusIc]();g.restore()}
+  else{const v=bonus.board[i],mine=bonus.open.includes(i);g.globalAlpha=mine?1:.4;g.fillStyle=v?'#fff3c8':'#e8d6f0';rrect(g,x+2,y+4,w-4,h-8,10);g.fill();g.strokeStyle=v?PAL.gold:'#8a3ab0';g.lineWidth=2;g.stroke();
+   if(v){coinDraw(x+w/2,y+32,GT,1.5);ezT(fmt(v*bonus.bet),x+w/2,y+h-26,28,'#3a2a1a','center',w-6)}else ezT('Home',x+w/2,y+h/2,26,'#5a2a7a','center',w-6);g.globalAlpha=1}}
+ if(bonus.done)menuBtns.push({x:0,y:0,w:LW,h:LH,fn:()=>{bonus.t=99},label:'bonus-done'});drawFx()}
+function ezPlay(){bg();if(LAND)ezT(M.n,FRAMER[0]+FRAMER[2]/2,32,30,'#ffe9a0','center',FRAMER[2]);ezCoins();ezRound(EZ.pause[0],EZ.pause[1],EZ.pause[2],'⏸',()=>{paused=true},'#e8590c');ezMama();drawCabinet();drawReels();ezSpin();drawBursts();
+ if(bonus)ezBonus();else if(EZ.big)ezBig();else drawFx()}
+function ezSign(r){const [x,y,w,h]=r;g.fillStyle=goldGrad(y,h);rrect(g,x,y,w,h,18);g.fill();g.fillStyle='#2a0818';rrect(g,x+3,y+3,w-6,h-6,16);g.fill();drawBulbs(r,9,18,4.2);
+ g.save();g.shadowColor='#ff4ab0';g.shadowBlur=14;ezT("Mama MacGregor's",x+w/2,y+h*.36,30,'#ffd6f2','center',w-50);g.shadowColor='#ffcc22';ezT('SLOTS',x+w/2,y+h*.7,52,'#fff3b0','center',w-50);g.restore()}
+function ezTitle(){nightBg();let sign,play,lvl,mama;
+ if(!LAND){sign=[20,84,360,130];play=[24,LH-26-96-18-116,352,116];lvl=[24,play[1]+134,352,96];const top=sign[1]+sign[3]+10,bot=play[1]-14,s=Math.min(3.2,(bot-top)/118);mama=[200,top+52*s,s]}
+ else{sign=[16,12,Math.min(380,LW*.46),120];const bx=sign[0]+sign[2]+30,bw=LW-bx-24;play=[bx,92,bw,120];lvl=[bx,230,bw,90];const top=sign[1]+sign[3]+8,s=Math.min(2.4,(LH-10-top)/112);mama=[sign[0]+sign[2]/2,top+50*s,s]}
+ ezSign(sign);mamaDraw(mama[0],mama[1],mama[2],GT,0,1);const mr=[mama[0]-62*mama[2],mama[1]-50*mama[2],124*mama[2],110*mama[2]];EZ.chars=[mr];
+ ezBtn(play,'▶ PLAY',()=>ezPlayNow(),{col:'#c8202e',fs:60,primary:true});ezBtn(lvl,'LEVEL SELECT',()=>{state='levels'},{col:'#1864ab',fs:34});ezRound(LW-72,8,64,'⚙️',()=>{state='settings'},'#495057');
+ ezLogo([sign,play,lvl,mr,[LW-72,8,64,64]])}
+function ezLevels(){nightBg(PAL.navyL,'#2a1440');ezBtn([10,10,150,64],'⬅ Back',()=>{state='title'},{col:'#495057',fs:30});ezT('Pick a Machine',LAND?LW/2:LW/2+76,42,34,'#fff','center',LAND?LW-360:LW-184,'rgba(0,0,0,.6)');
+ const top=88,gap=12;let rects;
+ if(!LAND){const ch=Math.min(130,(LH-top-gap*3-110)/3);rects=MACH.map((m,i)=>[14,top+i*(ch+gap),LW-28,ch])}else{const cw=(LW-28-gap*2)/3,ch=LH-top-100;rects=MACH.map((m,i)=>[14+i*(cw+gap),top,cw,ch])}
+ MACH.forEach((m,i)=>{const [x,y,w,h]=rects[i],sel=save.mach==m.id;menuBtns.push({x,y,w,h,fn:()=>{save.mach=m.id;M=m;sv()},label:m.n,primary:sel});
+  g.fillStyle=sel?'#ffd43b':goldGrad(y,h);rrect(g,x,y,w,h,16);g.fill();const gr2=g.createLinearGradient(0,y,0,y+h);gr2.addColorStop(0,m.pal.bg1);gr2.addColorStop(1,m.pal.bg2);g.fillStyle=gr2;rrect(g,x+6,y+6,w-12,h-12,12);g.fill();g.fillStyle='rgba(20,8,36,.5)';rrect(g,x+6,y+6,w-12,h-12,12);g.fill();
+  if(sel){g.strokeStyle='#ffd43b';g.lineWidth=7;rrect(g,x,y,w,h,16);g.stroke()}
+  if(LAND){const ic=[['cow','lamb'],['donkey','cart'],['calvary','bell']][i];ic.forEach((k,j)=>{g.save();g.translate(x+w/2+(j-.5)*80,y+h*.36);g.scale(.62,.62);ART[k](GT);g.restore()});
+   const L=ezLines(m.n,w-24,30);L.forEach((l,k)=>ezT(l,x+w/2,y+h*.7+k*36,30,'#fff','center',w-20,'rgba(0,0,0,.6)'))}
+  else ezT((sel?'✅ ':'')+m.n,x+w/2,y+h/2,32,'#fff','center',w-24,'rgba(0,0,0,.6)')});
+ const sy=LAND?LH-88:rects[2][1]+rects[2][3]+gap+4;ezBtn([14,sy,LW-28,Math.min(96,LH-sy-10)],'▶ START',()=>ezPlayNow(),{col:'#c8202e',fs:44,primary:true})}
+render=function(){g.setTransform(1,0,0,1,0,0);g.fillStyle='#0e0818';g.fillRect(0,0,CW,CH);g.setTransform(DPR*SC,0,0,DPR*SC,DPR*OXs,DPR*OYs);g.save();g.beginPath();g.rect(0,0,LW,LH);g.clip();menuBtns=[];
+ if(state=='title')ezTitle();else if(state=='levels'||state=='lobby')ezLevels();else if(state=='settings')ezSettingsScreen(()=>nightBg(),()=>{state='title'});else ezPlay();
+ if(paused){menuBtns=[];ezPauseOverlay(()=>{state='title';chrome(true);fs=null;bonus=null;EZ.big=null;spinning=false;reels.forEach(rl=>{rl.ph='idle';rl.stopped=true;rl.v=0})})}g.restore()};
+activeBtns=function(){return menuBtns};
+togglePause=function(){if(state!='play')return;paused=!paused};
+window.musicPaused=()=>paused||state!='play';
+addEventListener('keydown',e=>{if((e.code=='Enter')&&!e.repeat&&state=='title'&&!paused){e.preventDefault();ezPlayNow()}});
+if(!save.ez1){save.ez1=1;save.mach='pasture';sv()}save.cpl=EZ_BET;M=MACH.find(m=>m.id==save.mach)||MACH[0];state='title';resizeCanvas();
+window.__T=window.__T||{};Object.defineProperty(__T,'state',{get(){return state},set(v){state=v},configurable:true});
+Object.assign(__T,{ez:EZ,btns:()=>menuBtns.filter(b=>b.label!='tile').map(b=>({label:String(b.label||''),x:b.x*SC+OXs,y:b.y*SC+OYs,w:b.w*SC,h:b.h*SC})),spinning:()=>spinning,modal:()=>EZ.big?'big':null,
+ bonus:()=>bonus&&{open:bonus.open.length,done:bonus.done,sum:bonus.sum},fs:()=>fs&&fs.left,machine:()=>M.id,logo:()=>EZ.logo,chars:()=>EZ.chars,
+ forceBig:()=>{const s=__T.findStops(e=>e.lineTot*CPL[EZ_BET]>=10*M.lines*CPL[EZ_BET]&&!e.fs&&!e.bonus);__T.force(s)},forceBonus:()=>{__T.force(__T.findStops(e=>e.bonus&&!e.fs))},forceFS:()=>{__T.force(__T.findStops(e=>e.fs&&!e.bonus))}});
 
 </script>
 <!--lb--><script>// LIVE config (Firestore). Public web keys only (safe to ship per Firebase docs). Used only for J Woo's Fishing Challenge + its five8nine copy.
@@ -744,7 +859,7 @@ async function postNow(){if(!G)return;const F=x=>x==null?()=>undefined:typeof x=
   return show()}
 const api={init,postNow,syncBest,localBest,gameOver,submitQuiet,watch,show,close,isOpen:()=>open,get backend(){return REMOTE?REMOTE.name:'local'},_t:{cleanName,nameError,fmt,boardId,pid,keyOf}};
 window.PALB=api})();
-</script><script>PALB.init({"game": "mama-macgregors-slots", "title": "Mama MacGregor's Slots · Biggest Win", "order": "desc", "unit": "coins", "min": 0, "max": 1000000000, "boards": null, "watch": [{"when": "!spinning&&!modal&&!modalQ.length&&!bonus&&lastWin>0&&lastWin>=save.best.win&&window.__lbS!==save.stats.spins", "score": "(window.__lbS=save.stats.spins,save.best.win)", "silent": true, "delay": 900}]})</script><!--/lb--><!--share--><style>#dock{position:fixed;z-index:60;display:none;gap:6px;top:0;left:0}#dock.inl{position:static;display:flex;justify-content:center;flex-wrap:wrap;margin:6px auto}
+</script><script>PALB.init({"game": "mama-macgregors-slots", "title": "Mama MacGregor's Slots · Biggest Win", "order": "desc", "unit": "coins", "min": 0, "max": 1000000000, "boards": null, "button": false, "watch": []})</script><!--/lb--><!--share--><style>#dock{position:fixed;z-index:60;display:none;gap:6px;top:0;left:0}#dock.inl{position:static;display:flex;justify-content:center;flex-wrap:wrap;margin:6px auto}
 .dk{box-sizing:border-box;height:34px;border-radius:17px;border:2px solid #fff;background:rgba(0,0,0,.66);color:#fff;font:bold 14px/30px system-ui,-apple-system,Segoe UI,sans-serif;padding:0 12px;margin:0;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer;flex:none}
 .dk.ic{width:44px;padding:0;font-size:17px}#dock.inl .dk{height:44px;line-height:40px;font-size:17px;padding:0 18px;border-radius:22px;border-width:3px}
 #dockHint{position:fixed;z-index:61;display:none;box-sizing:border-box;background:rgba(10,10,20,.92);color:#fff;border:2px solid #fff;border-radius:12px;font:13px/1.3 system-ui,-apple-system,sans-serif;padding:7px 36px 7px 10px;top:0;left:0}#dockHint.inl{position:relative;margin:4px auto;max-width:320px}
@@ -828,5 +943,4 @@ GamepadSupport.init({
 });
 </script>
 <!-- gamepad:end -->
-<script src="studio-logo.js?v=1" data-src="studio-logo.webp" data-alt="Book of Heaven Studios" data-when="state==='title'" data-corner="br" data-cornerl="br" data-h="54" data-hl="46"></script>
 </body></html>
