@@ -586,7 +586,7 @@ function ezBtn(r,label,fn,o={}){const [x,y,w,h]=r;menuBtns.push({x,y,w,h,fn,labe
  ezT(label,x+w/2,y+h/2+1,o.fs||Math.min(h*.42,34),o.tc||'#fff','center',w-20,'rgba(0,0,0,.55)')}
 function ezRound(x,y,s,label,fn,col){menuBtns.push({x,y,w:s,h:s,fn,label});g.save();g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=6;g.fillStyle=col;g.beginPath();g.arc(x+s/2,y+s/2,s/2,0,TAU);g.fill();g.restore();g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.arc(x+s/2,y+s/2,s/2-1.5,0,TAU);g.stroke();
  g.font='bold '+Math.round(s*.46)+'px "Segoe UI Emoji","Noto Color Emoji",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillStyle='#fff';g.fillText(label,x+s/2,y+s/2+2);g.textBaseline='alphabetic'}
-const EZLOGO=new Image();EZLOGO.src='studio-logo.webp';
+const EZLOGO=new Image();EZLOGO.src='studio-logo-boh.webp';
 // tiny studio logo, only where it touches nothing
 function ezLogo(avoid,h=40){if(!EZLOGO.complete||!EZLOGO.naturalWidth)return null;const w=h*EZLOGO.naturalWidth/EZLOGO.naturalHeight,m=8;
  for(const [x,y] of [[m,m],[m,LH-h-m],[LW-w-m,LH-h-m],[LW-w-m,m]]){const r=[x,y,w,h];if(avoid.some(a=>r[0]<a[0]+a[2]&&a[0]<r[0]+r[2]&&r[1]<a[1]+a[3]&&a[1]<r[1]+r[3]))continue;
